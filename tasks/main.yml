@@ -41,7 +41,7 @@
   tags:
     - profile
 
-- name: Export profile directories
+- name: Export profile directory facts
   ansible.builtin.set_fact:
     profile_user_profile_directory: "{{ user_profile_dir }}"
     profile_user_bash_profile_directory: "{{ user_bash_profile_dir }}"
@@ -58,7 +58,7 @@
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
   become: "{{ item.become | default(false) }}"
-  loop: "{{ directories }}"
+  loop: "{{ profile_directories }}"
   when:
     - install_profile
     - profile_directories is defined
@@ -73,7 +73,7 @@
     mode: "{{ item.mode | default(omit) }}"
     owner: "{{ item.owner | default(omit) }}"
     group: "{{ item.group | default(omit) }}"
-  loop: "{{ files }}"
+  loop: "{{ profile_files }}"
   become: "{{ item.become | default(false) }}"
   when:
     - install_profile
