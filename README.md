@@ -24,7 +24,7 @@ home directory.**
 Otherwise, see `defaults/main.yml` for values that can be tweaked on a per-host
 basis.
 
-### Exports
+### Exported variables
 
 Once run, this role also exports two variables by setting the following facts:
 
