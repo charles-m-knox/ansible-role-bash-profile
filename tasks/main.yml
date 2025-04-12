@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: MIT-0
+---
+
+- name: Install bash, bash-completion
+  ansible.builtin.package:
+    name: "{{ ['bash', 'bash-completion'] }}"
+    state: present
+  become: true
+  when:
+    - install_profile
+  tags:
+    - profile
+
+- name: Configure users to use bash
+  ansible.builtin.user:
+    name: "{{ item }}"
+    shell: /bin/bash
+  loop:
+    - "{{ ansible_user }}"
+    - root
+  become: true
+  when:
+    - install_profile
+  tags:
+    - profile
+
+- name: Delete default bashrc/bash_profile/similar
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ ansible_user_dir }}/.profile"  # gets executed on login
+    - "{{ ansible_user_dir }}/.bash_login"  # gets executed on login
+    - "{{ ansible_user_dir }}/.bash_logout"  # gets executed on log out, clearing tty screen is most common use case
+    - "{{ ansible_user_dir }}/.bash_profile"
+    - "{{ ansible_user_dir }}/.bashrc"
+    - "{{ ansible_user_dir }}/.cshrc"
+    - "{{ ansible_user_dir }}/.tcshrc"
+  when:
+    - install_profile
+  tags:
+    - profile
+
+- name: Export profile directories
+  ansible.builtin.set_fact:
+    profile_user_profile_directory: "{{ user_profile_dir }}"
+    profile_user_bash_profile_directory: "{{ user_bash_profile_dir }}"
+  when:
+    - install_profile
+  tags:
+    - profile
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item.dir }}"
+    state: "{{ item.state | default('directory') }}"
+    mode: "{{ item.mode | default(omit) }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+  become: "{{ item.become | default(false) }}"
+  loop: "{{ directories }}"
+  when:
+    - install_profile
+    - profile_directories is defined
+  tags:
+    - profile
+
+# see directories.yml for similarly grouped items
+- name: Render file from variable
+  ansible.builtin.template:
+    src: "{{ item.src | default('files/file.j2') }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode | default(omit) }}"
+    owner: "{{ item.owner | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+  loop: "{{ files }}"
+  become: "{{ item.become | default(false) }}"
+  when:
+    - install_profile
+    - profile_files is defined
+    - item.content is defined
+  tags:
+    - profile

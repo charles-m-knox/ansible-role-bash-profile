@@ -1,0 +1,177 @@
+# SPDX-License-Identifier: MIT-0
+---
+
+install_profile: false
+
+# shell/bash profile configurations
+user_profile_dir_name: ".profile.d"
+user_profile_dir: "{{ ansible_user_dir }}/{{ user_profile_dir_name }}"
+user_bash_profile_dir: "{{ ansible_user_dir }}/.bash-profile.d"
+
+# TODO
+# go_profile: |
+#   export GOPROXY="{{ goproxy_private_url }},direct"
+#   export GOSUMDB="off"
+#   export PATH="$PATH:$HOME/go/bin"
+
+# git_profile
+profile_git: |
+  alias gf="git fetch --prune --all"
+  alias gs="git status"
+  alias gl="git log --show-signature"
+  alias gc="git commit -m"
+  alias ga="git add -A"
+  alias grv="git remote -v"
+  alias gb="git branch -v -a"
+  alias gd="git diff"
+  alias gcl="git config -l"
+  alias gcs="git commit -S -m"
+  export GPG_TTY=$(tty)
+
+profile_custom: |
+  export PATH="$PATH:{{ ansible_user_dir }}/.local/bin"
+
+  alias xzxz="xz -9 -e -T 12 -vv"
+  alias xzz="xz -9 -e -T 12 -vv"
+  alias xzz9="xz -9 -e -T 10 -vv"
+  alias unxzxz="unxz -e -T 12 -vv"
+  alias unxzz="unxz -e -T 12 -vv"
+  alias isodate='date -u +"%Y-%m-%dT%H:%M:%SZ"'
+  alias journalu="journalctl -f --user -u "
+  alias ls='ls --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
+
+  getmem() { echo $(awk '/^Pss:/ {pss+=$2} END {print pss}' < /proc/$(pgrep ${*})/smaps) MB ; }
+  getmempid() { echo $(awk '/^Pss:/ {pss+=$2} END {print pss}' < /proc/${*}/smaps) MB ; }
+
+  PROMPT_COMMAND="history -a; ${PROMPT_COMMAND}"
+
+  # don't put duplicate lines or lines starting with space in the history
+  HISTCONTROL=ignoreboth
+  # removes visual popup prompts for gpg keys
+  export SSH_ASKPASS=
+
+  PS1='\u@\h:\w\$ '
+
+  PROFILE_SET=yes
+
+profile_custom_bash: |
+  # gets rid of the alt+1..alt+9 (arg: x) behavior
+  for i in "-" {0..9}; do bind -r "\e$i"; done
+
+  # if running a bash non-login shell, /etc/profile doesn't get called,
+  # see https://wiki.archlinux.org/title/Bash
+  [[ ${PROFILE_SET} != yes ]] && . /etc/profile
+
+  # check the window size after each command and, if necessary,
+  # update the values of LINES and COLUMNS.
+  shopt -s checkwinsize
+
+  # append to the history file, don't overwrite it
+  shopt -s histappend
+
+  # enable programmable completion features (you don't need to enable
+  # this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+  # sources /etc/bash.bashrc).
+  if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+      . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+      . /etc/bash_completion
+    fi
+  fi
+
+  # Eternal bash history.
+  # ---------------------
+  # Undocumented feature which sets the size to "unlimited".
+  # https://stackoverflow.com/questions/9457233/unlimited-bash-history
+  export HISTFILESIZE=
+  export HISTSIZE=
+  export HISTTIMEFORMAT="[%F %T] "
+  # Change the file location because certain bash sessions truncate .bash_history file upon close.
+  # http://superuser.com/questions/575479/bash-history-truncated-to-500-lines-on-each-login
+  export HISTFILE=~/.bash_eternal_history
+  # Force prompt to write history after every command.
+  # http://superuser.com/questions/20900/bash-history-loss
+
+# note: can't use ansible_user_dir here, because this is under /etc/profile.d
+# and applies to every user on the system
+#
+# also, note that the quotations/globbing below are required in order to
+# properly loop
+user_profile_d_loader: |
+  # Load profiles from
+  if test -d "${HOME}/{{ user_profile_dir_name }}/"; then
+    for profile in "${HOME}/{{ user_profile_dir_name }}/"*.sh; do
+      test -r "$profile" && . "$profile"
+    done
+    unset profile
+  fi
+
+user_bash_profile_d_loader: |
+  # Load profiles from {{ user_bash_profile_dir }}
+  if test -d {{ user_bash_profile_dir }}/; then
+    for profile in {{ user_bash_profile_dir }}/*.sh; do
+      test -r "$profile" && . "$profile"
+    done
+    unset profile
+  fi
+
+default_bashrc: |
+  # If not running interactively, don't do anything
+  case $- in
+      *i*) ;;
+        *) return;;
+  esac
+
+  {{ user_bash_profile_d_loader }}
+
+
+profile_directories:
+  - dir: "{{ user_profile_dir }}"
+    become: false
+    mode: "0755"
+  - dir: "{{ user_bash_profile_dir }}"
+    become: false
+    mode: "0755"
+
+profile_files:
+  # global profiles:
+  # TODO:
+  # - dest: /etc/profile.d/go.sh
+  #   become: true
+  #   owner: root
+  #   group: root
+  #   mode: "0644"
+  #   content: "{{ go_profile }}"
+
+  - dest: /etc/profile.d/999-custom-user-profiles.sh
+    become: true
+    owner: root
+    group: root
+    mode: "0644"
+    content: "{{ user_profile_d_loader }}"
+
+    # user-scoped shell profiles:
+  - dest: "{{ user_profile_dir }}/01-profile-custom.sh"
+    become: false
+    mode: "0644"
+    content: "{{ profile_custom }}"
+
+  - dest: "{{ user_profile_dir }}/50-git.sh"
+    become: false
+    mode: "0644"
+    content: "{{ profile_git }}"
+
+    # user-scoped bash profiles:
+  - dest: "{{ ansible_user_dir }}/.bashrc"
+    become: false
+    mode: "0644"
+    content: "{{ default_bashrc }}"
+
+  - dest: "{{ user_bash_profile_dir }}/02-profile-custom-bash.sh"
+    become: false
+    mode: "0644"
+    content: "{{ profile_custom_bash }}"
