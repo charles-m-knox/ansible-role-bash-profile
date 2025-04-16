@@ -30,7 +30,7 @@ Once run, this role also exports two variables by setting the following facts:
 
 ```conf
 profile_user_profile_directory={{ ansible_env.HOME }}/.profile.d
-profile_user_bash_profile_directory={{ ansible_env.HOME }}/.bash-profile.d
+profile_user_bash_profile_directory={{ ansible_env.HOME }}/.bashrc.d
 ```
 
 You should use these directories in other places to configure your other

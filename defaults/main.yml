@@ -128,7 +128,6 @@ default_bashrc: |
 
   {{ user_bash_profile_d_loader }}
 
-
 profile_directories:
   - dir: "{{ user_profile_dir }}"
     become: false
