@@ -5,8 +5,8 @@ install_profile: false
 
 # shell/bash profile configurations
 user_profile_dir_name: ".profile.d"
-user_profile_dir: "{{ ansible_user_dir }}/{{ user_profile_dir_name }}"
-user_bash_profile_dir: "{{ ansible_user_dir }}/.bash-profile.d"
+user_profile_dir: "{{ ansible_env.HOME }}/{{ user_profile_dir_name }}"
+user_bash_profile_dir: "{{ ansible_env.HOME }}/.bashrc.d"
 
 # TODO
 # go_profile: |
@@ -29,7 +29,7 @@ profile_git: |
   export GPG_TTY=$(tty)
 
 profile_custom: |
-  export PATH="$PATH:{{ ansible_user_dir }}/.local/bin"
+  export PATH="$PATH:{{ ansible_env.HOME }}/.local/bin"
 
   alias xzxz="xz -9 -e -T 12 -vv"
   alias xzz="xz -9 -e -T 12 -vv"
@@ -96,7 +96,7 @@ profile_custom_bash: |
   # Force prompt to write history after every command.
   # http://superuser.com/questions/20900/bash-history-loss
 
-# note: can't use ansible_user_dir here, because this is under /etc/profile.d
+# note: can't use ansible_env.HOME here, because this is under /etc/profile.d
 # and applies to every user on the system
 #
 # also, note that the quotations/globbing below are required in order to
@@ -166,7 +166,7 @@ profile_files:
     content: "{{ profile_git }}"
 
     # user-scoped bash profiles:
-  - dest: "{{ ansible_user_dir }}/.bashrc"
+  - dest: "{{ ansible_env.HOME }}/.bashrc"
     become: false
     mode: "0644"
     content: "{{ default_bashrc }}"

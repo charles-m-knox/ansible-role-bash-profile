@@ -29,13 +29,13 @@
     path: "{{ item }}"
     state: absent
   loop:
-    - "{{ ansible_user_dir }}/.profile"  # gets executed on login
-    - "{{ ansible_user_dir }}/.bash_login"  # gets executed on login
-    - "{{ ansible_user_dir }}/.bash_logout"  # gets executed on log out, clearing tty screen is most common use case
-    - "{{ ansible_user_dir }}/.bash_profile"
-    - "{{ ansible_user_dir }}/.bashrc"
-    - "{{ ansible_user_dir }}/.cshrc"
-    - "{{ ansible_user_dir }}/.tcshrc"
+    - "{{ ansible_env.HOME }}/.profile"  # gets executed on login
+    - "{{ ansible_env.HOME }}/.bash_login"  # gets executed on login
+    - "{{ ansible_env.HOME }}/.bash_logout"  # gets executed on log out, clearing tty screen is most common use case
+    - "{{ ansible_env.HOME }}/.bash_profile"
+    - "{{ ansible_env.HOME }}/.bashrc"
+    - "{{ ansible_env.HOME }}/.cshrc"
+    - "{{ ansible_env.HOME }}/.tcshrc"
   when:
     - install_profile
   tags:
